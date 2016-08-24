@@ -27,6 +27,7 @@ import leskin.udacity.popularmovies.model.Movie;
 import leskin.udacity.popularmovies.network.APIService;
 import leskin.udacity.popularmovies.network.SortType;
 import leskin.udacity.popularmovies.network.Urls;
+import leskin.udacity.popularmovies.utils.EndlessScrollListener;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -44,7 +45,8 @@ public class MoviesActivity extends AppCompatActivity {
     ProgressBar progressBar;
 
     private MovieAdapter adapter;
-    private List<Movie> listMovies = new ArrayList<>();
+    private GridLayoutManager layoutManager;
+    private ArrayList<Movie> listMovies = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,20 +57,28 @@ public class MoviesActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        getMovies(SortType.POPULAR);
-        super.onResume();
+    protected void onStart() {
+        super.onStart();
+        getMovies(SortType.POPULAR, 1);
     }
 
     private void init() {
-        GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
-        moviesRecyclerView.setHasFixedSize(true);
+        layoutManager = new GridLayoutManager(this, 2);
         moviesRecyclerView.setLayoutManager(layoutManager);
+        moviesRecyclerView.setItemViewCacheSize(30);
+        moviesRecyclerView.setVerticalScrollBarEnabled(true);
         adapter = new MovieAdapter(this, listMovies);
         moviesRecyclerView.setAdapter(adapter);
+        moviesRecyclerView.setHasFixedSize(true);
+        moviesRecyclerView.addOnScrollListener(new EndlessScrollListener(layoutManager) {
+            @Override
+            public void onLoadMore(int page, int totalItemsCount) {
+                getMovies(SortType.POPULAR, page);
+            }
+        });
     }
 
-    private void getMovies(SortType sortType) {
+    private void getMovies(SortType sortType, int page) {
         try {
             showProgress();
             Retrofit retrofit = new Retrofit.Builder()
@@ -77,13 +87,12 @@ public class MoviesActivity extends AppCompatActivity {
                     .build();
 
             APIService service = retrofit.create(APIService.class);
-            Map<String, String> queryParams = getQueryParams();
+            Map<String, String> queryParams = getQueryParams(page);
             Log.d(TAG, "getMovies: " + queryParams.toString());
             Call<ResponseBody> call = sortType == SortType.POPULAR ? service.getPopularMovies(queryParams) : service.getTopRatedMovies(queryParams);
             call.enqueue(new Callback<ResponseBody>() {
                 @Override
                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                    listMovies.clear();
                     listMovies.addAll(parseResponse(response.body()));
                     fillView();
                 }
@@ -100,22 +109,22 @@ public class MoviesActivity extends AppCompatActivity {
         }
     }
 
-    private Map<String, String> getQueryParams() {
+    private Map<String, String> getQueryParams(int page) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("api_key", Config.MOVIE_DB_API_KEY);
-        queryParams.put("page", "1");
+        queryParams.put("page", String.valueOf(page));
         return queryParams;
     }
 
-    private List<Movie> parseResponse(ResponseBody response) {
-        List<Movie> list = new ArrayList<>();
+    private ArrayList<Movie> parseResponse(ResponseBody response) {
+        ArrayList<Movie> list = new ArrayList<>();
         try {
             String jsonStr = response.string();
             Type listType = new TypeToken<List<Movie>>() {
             }.getType();
             JSONObject json = new JSONObject(jsonStr);
             list = new Gson().fromJson(json.get("results").toString(), listType);
-        } catch (JSONException | IOException e) {
+        } catch (JSONException | IOException | NullPointerException e) {
             e.printStackTrace();
         }
         return list;
@@ -123,7 +132,8 @@ public class MoviesActivity extends AppCompatActivity {
 
     private void fillView() {
         hideProgress();
-        adapter.notifyDataSetChanged();
+        adapter.notifyItemInserted(adapter.getItemCount());
+
     }
 
     private void showProgress() {

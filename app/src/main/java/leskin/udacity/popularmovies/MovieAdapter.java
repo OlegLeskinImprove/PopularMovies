@@ -9,7 +9,7 @@ import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -23,9 +23,9 @@ import leskin.udacity.popularmovies.network.Urls;
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHolder> {
 
     private Context context;
-    private List<Movie> list;
+    private ArrayList<Movie> list;
 
-    public MovieAdapter(Context context, List<Movie> list) {
+    public MovieAdapter(Context context, ArrayList<Movie> list) {
         this.context = context;
         this.list = list;
     }
