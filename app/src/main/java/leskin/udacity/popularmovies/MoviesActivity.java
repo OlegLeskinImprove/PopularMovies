@@ -1,10 +1,13 @@
 package leskin.udacity.popularmovies;
 
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 
@@ -25,7 +28,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import leskin.udacity.popularmovies.model.Movie;
 import leskin.udacity.popularmovies.network.APIService;
-import leskin.udacity.popularmovies.network.SortType;
 import leskin.udacity.popularmovies.network.Urls;
 import leskin.udacity.popularmovies.utils.EndlessScrollListener;
 import okhttp3.ResponseBody;
@@ -59,26 +61,42 @@ public class MoviesActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        getMovies(SortType.POPULAR, 1);
+        listMovies.clear();
+        getMovies(1);
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.movies_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_settings) {
+            SettingsActivity.launch(this);
+            return true;
+        } else
+            return super.onOptionsItemSelected(item);
+    }
+
 
     private void init() {
         layoutManager = new GridLayoutManager(this, 2);
         moviesRecyclerView.setLayoutManager(layoutManager);
         moviesRecyclerView.setItemViewCacheSize(30);
-        moviesRecyclerView.setVerticalScrollBarEnabled(true);
         adapter = new MovieAdapter(this, listMovies);
         moviesRecyclerView.setAdapter(adapter);
         moviesRecyclerView.setHasFixedSize(true);
         moviesRecyclerView.addOnScrollListener(new EndlessScrollListener(layoutManager) {
             @Override
             public void onLoadMore(int page, int totalItemsCount) {
-                getMovies(SortType.POPULAR, page);
+                getMovies(page);
             }
         });
     }
 
-    private void getMovies(SortType sortType, int page) {
+    private void getMovies(final int page) {
         try {
             showProgress();
             Retrofit retrofit = new Retrofit.Builder()
@@ -89,12 +107,13 @@ public class MoviesActivity extends AppCompatActivity {
             APIService service = retrofit.create(APIService.class);
             Map<String, String> queryParams = getQueryParams(page);
             Log.d(TAG, "getMovies: " + queryParams.toString());
-            Call<ResponseBody> call = sortType == SortType.POPULAR ? service.getPopularMovies(queryParams) : service.getTopRatedMovies(queryParams);
+
+            Call<ResponseBody> call = service.getMovies(queryParams);
             call.enqueue(new Callback<ResponseBody>() {
                 @Override
                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                     listMovies.addAll(parseResponse(response.body()));
-                    fillView();
+                    fillView(page == 1);
                 }
 
                 @Override
@@ -113,6 +132,7 @@ public class MoviesActivity extends AppCompatActivity {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("api_key", Config.MOVIE_DB_API_KEY);
         queryParams.put("page", String.valueOf(page));
+        queryParams.put("sort_by", getOrderTypeFromPref());
         return queryParams;
     }
 
@@ -130,10 +150,17 @@ public class MoviesActivity extends AppCompatActivity {
         return list;
     }
 
-    private void fillView() {
+    private void fillView(boolean reload) {
         hideProgress();
-        adapter.notifyItemInserted(adapter.getItemCount());
+        if (reload)
+            adapter.notifyDataSetChanged();
+        else
+            adapter.notifyItemInserted(adapter.getItemCount());
+    }
 
+    private String getOrderTypeFromPref() {
+        return PreferenceManager.getDefaultSharedPreferences(this).getString(getString(R.string.pref_order_key),
+                getString(R.string.pref_order_default_value));
     }
 
     private void showProgress() {

@@ -5,5 +5,5 @@ package leskin.udacity.popularmovies.network;
  */
 public class Urls {
     public static final String POSTER_URL = "http://image.tmdb.org/t/p/w185/";
-    public static final String BASE_URL = "http://api.themoviedb.org/";
+    public static final String BASE_URL = "http://api.themoviedb.org/3/";
 }
