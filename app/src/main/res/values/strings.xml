@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">PopularMovies</string>
+    <string name="movie_details_average_rating"><![CDATA[Rating: <font color=#000000>%s</font>]]></string>
 
     <string name="menu_settings">Settings</string>
 

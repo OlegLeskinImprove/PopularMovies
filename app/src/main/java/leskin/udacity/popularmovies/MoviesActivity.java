@@ -26,6 +26,7 @@ import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import leskin.udacity.popularmovies.adapter.MovieAdapter;
 import leskin.udacity.popularmovies.model.Movie;
 import leskin.udacity.popularmovies.network.APIService;
 import leskin.udacity.popularmovies.network.Urls;

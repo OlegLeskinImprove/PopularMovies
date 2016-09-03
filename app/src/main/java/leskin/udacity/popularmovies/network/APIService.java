@@ -12,12 +12,9 @@ import retrofit2.http.QueryMap;
  */
 public interface APIService {
 
-    @GET("3/movie/top_rated")
-    Call<ResponseBody> getTopRatedMovies(@QueryMap Map<String, String> options);
-
-    @GET("3/movie/popular")
-    Call<ResponseBody> getPopularMovies(@QueryMap Map<String, String> options);
-
     @GET("discover/movie")
     Call<ResponseBody> getMovies(@QueryMap Map<String, String> options);
+
+    @GET("movie/")
+    Call<ResponseBody> getMovieDetails(@QueryMap Map<String, String> options);
 }

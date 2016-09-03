@@ -4,10 +4,11 @@ package leskin.udacity.popularmovies.model;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Movie {
+public class Movie implements Serializable{
 
     @SerializedName("poster_path")
     @Expose

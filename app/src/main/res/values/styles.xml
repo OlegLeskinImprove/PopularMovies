@@ -8,4 +8,39 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="PrimaryLightText" parent="AppTheme">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="PrimaryLightText.30" parent="PrimaryLightText">
+        <item name="android:textSize">30sp</item>
+    </style>
+
+    <style name="PrimaryText" parent="AppTheme">
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="PrimaryText.16" parent="PrimaryText">
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="PrimaryText.20" parent="PrimaryText">
+        <item name="android:textSize">20sp</item>
+    </style>
+
+    <style name="PrimaryText.20.italic" parent="PrimaryText.20">
+        <item name="android:textStyle">italic</item>
+    </style>
+
+    <style name="PrimaryDarkText" parent="AppTheme">
+        <item name="android:textColor">@color/colorPrimaryDark</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="PrimaryDarkText.20" parent="PrimaryDarkText">
+        <item name="android:textSize">20sp</item>
+    </style>
+
 </resources>

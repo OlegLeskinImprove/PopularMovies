@@ -1,4 +1,4 @@
-package leskin.udacity.popularmovies;
+package leskin.udacity.popularmovies.adapter;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -13,6 +13,8 @@ import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import leskin.udacity.popularmovies.DetailMovieActivity;
+import leskin.udacity.popularmovies.R;
 import leskin.udacity.popularmovies.model.Movie;
 import leskin.udacity.popularmovies.network.Urls;
 
@@ -38,13 +40,23 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
     }
 
     @Override
-    public void onBindViewHolder(MovieViewHolder holder, int position) {
+    public void onBindViewHolder(MovieViewHolder holder, final int position) {
         Glide.with(context).load(Urls.POSTER_URL + list.get(position).getPosterPath()).into(holder.posterImg);
+        holder.posterImg.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                DetailMovieActivity.launch(context, getItem(position));
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
         return list.size();
+    }
+
+    private Movie getItem(int position) {
+        return list.get(position);
     }
 
     class MovieViewHolder extends RecyclerView.ViewHolder {
