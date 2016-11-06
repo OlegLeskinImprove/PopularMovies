@@ -55,16 +55,16 @@ public class Movie implements Parcelable {
     @Expose
     private Double voteAverage;
 
+    public Movie(){
+
+    }
+
     protected Movie(Parcel in) {
         posterPath = in.readString();
         overview = in.readString();
         releaseDate = in.readString();
-        originalTitle = in.readString();
-        originalLanguage = in.readString();
         title = in.readString();
-        backdropPath = in.readString();
         voteAverage = in.readDouble();
-        voteCount = in.readInt();
         id = in.readInt();
     }
 
@@ -85,12 +85,8 @@ public class Movie implements Parcelable {
         parcel.writeString(posterPath);
         parcel.writeString(overview);
         parcel.writeString(releaseDate);
-        parcel.writeString(originalTitle);
-        parcel.writeString(originalLanguage);
         parcel.writeString(title);
-        parcel.writeString(backdropPath);
         parcel.writeDouble(voteAverage);
-        parcel.writeInt(voteCount);
         parcel.writeInt(id);
     }
 

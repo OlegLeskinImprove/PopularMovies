@@ -15,11 +15,13 @@
     <array name="pref_units_value">
         <item>popularity.desc</item>
         <item>vote_average.desc</item>
+        <item>favorites</item>
     </array>
 
     <array name="pref_units_options">
         <item>Popular</item>
         <item>Top rated</item>
+        <item>My rating</item>
     </array>
 
 </resources>

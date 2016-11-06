@@ -1,7 +1,9 @@
 package leskin.udacity.popularmovies.adapter;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
@@ -22,6 +24,8 @@ import java.util.Locale;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import leskin.udacity.popularmovies.R;
+import leskin.udacity.popularmovies.db.FavoriteMovies;
+import leskin.udacity.popularmovies.db.FavoriteMoviesProvider;
 import leskin.udacity.popularmovies.model.Movie;
 import leskin.udacity.popularmovies.model.Review;
 import leskin.udacity.popularmovies.model.Trailer;
@@ -95,13 +99,57 @@ public class MovieDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         return TYPE_REVIEW;
     }
 
-    private void fillMovieDetails(MovieDetailsViewHolder holder) {
+    private void fillMovieDetails(final MovieDetailsViewHolder holder) {
         Glide.with(context).load(Urls.POSTER_URL + movie.getPosterPath()).into(holder.posterImg);
         holder.headerText.setText(movie.getTitle());
         holder.yearText.setText(getParsedYear(movie.getReleaseDate()));
         setVoteAverageText(holder);
         holder.descriptionText.setText(movie.getOverview());
+
+        if (checkInFavorite(movie))
+            holder.addToFavoriteImg.setImageResource(R.drawable.ic_star_black);
+        else holder.addToFavoriteImg.setImageResource(R.drawable.ic_star_border_black);
+
+        holder.addToFavoriteImg.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!checkInFavorite(movie)) {
+                    ContentValues contentValues = new ContentValues();
+                    contentValues.put(FavoriteMovies.TITLE, movie.getTitle());
+                    contentValues.put(FavoriteMovies.ID, movie.getId());
+                    contentValues.put(FavoriteMovies.OVERVIEW, movie.getOverview());
+                    contentValues.put(FavoriteMovies.POSTER_PATH, movie.getPosterPath());
+                    contentValues.put(FavoriteMovies.RELEASE_DATE, movie.getReleaseDate());
+                    contentValues.put(FavoriteMovies.VOTE_AVERAGE, movie.getVoteAverage());
+                    context.getContentResolver().insert(FavoriteMoviesProvider.FavoriteMovies.CONTENT_URI, contentValues);
+                    holder.addToFavoriteImg.setImageResource(R.drawable.ic_star_black);
+                } else {
+                    String where = FavoriteMovies.ID + "= '" + movie.getId() + "'";
+                    context.getContentResolver().delete(FavoriteMoviesProvider.FavoriteMovies.CONTENT_URI, where, null);
+                    holder.addToFavoriteImg.setImageResource(R.drawable.ic_star_border_black);
+                }
+
+            }
+        });
     }
+
+    private boolean checkInFavorite(Movie movie) {
+        try {
+            Cursor cursor = context.getContentResolver().query(FavoriteMoviesProvider.FavoriteMovies.CONTENT_URI, new String[]{FavoriteMovies.ID}, null, null, null);
+            if (cursor.moveToFirst()) {
+                do {
+                    if (movie.getId() == cursor.getInt(cursor.getColumnIndex(FavoriteMovies.ID))) {
+                        return true;
+                    }
+                } while (cursor.moveToNext());
+            }
+            cursor.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 
     @SuppressWarnings("deprecation")
     private void setVoteAverageText(MovieDetailsViewHolder holder) {
@@ -180,6 +228,9 @@ public class MovieDetailsAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
         @BindView(R.id.img_poster)
         ImageView posterImg;
+
+        @BindView(R.id.img_favorite)
+        ImageView addToFavoriteImg;
 
         public MovieDetailsViewHolder(View itemView) {
             super(itemView);

@@ -1,5 +1,6 @@
 package leskin.udacity.popularmovies;
 
+import android.database.Cursor;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -31,6 +32,8 @@ import java.util.Map;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import leskin.udacity.popularmovies.adapter.MovieAdapter;
+import leskin.udacity.popularmovies.db.FavoriteMovies;
+import leskin.udacity.popularmovies.db.FavoriteMoviesProvider;
 import leskin.udacity.popularmovies.model.Movie;
 import leskin.udacity.popularmovies.network.APIService;
 import leskin.udacity.popularmovies.network.Urls;
@@ -115,40 +118,49 @@ public class MoviesFragment extends Fragment {
     private void getMovies(final int page) {
         try {
             showProgress();
-            Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl(Urls.BASE_URL)
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build();
+            if (loadFromNetwork()) {
+                Retrofit retrofit = new Retrofit.Builder()
+                        .baseUrl(Urls.BASE_URL)
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build();
 
-            APIService service = retrofit.create(APIService.class);
-            Map<String, String> queryParams = getQueryParams(page);
+                APIService service = retrofit.create(APIService.class);
+                Map<String, String> queryParams = getQueryParams(page, getOrderTypeFromPref());
 
-            Call<ResponseBody> call = service.getMovies(queryParams);
-            call.enqueue(new Callback<ResponseBody>() {
-                @Override
-                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                    listMovies.addAll(parseResponse(response.body()));
-                    fillView(page == 1);
-                    if (!listMovies.isEmpty() && page == 1)
-                        ((MoviesCallback) getActivity()).moviesWasLoaded(listMovies.get(0));
-                }
+                Call<ResponseBody> call = service.getMovies(queryParams);
+                call.enqueue(new Callback<ResponseBody>() {
+                    @Override
+                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                        listMovies.addAll(parseResponse(response.body()));
+                        fillView(page == 1);
+                        if (!listMovies.isEmpty() && page == 1)
+                            ((MoviesCallback) getActivity()).moviesWasLoaded(listMovies.get(0));
+                    }
 
-                @Override
-                public void onFailure(Call<ResponseBody> call, Throwable t) {
-                    hideProgress();
-                }
-            });
+                    @Override
+                    public void onFailure(Call<ResponseBody> call, Throwable t) {
+                        hideProgress();
+                    }
+                });
+            } else {
+                loadFromFavorites();
+            }
 
         } catch (Exception e) {
             Log.e(TAG, "getMovies: " + e.toString());
         }
     }
 
-    private Map<String, String> getQueryParams(int page) {
+    private boolean loadFromNetwork() {
+        return !getOrderTypeFromPref().equals(getResources().getStringArray(R.array.pref_units_value)[2]);
+    }
+
+
+    private Map<String, String> getQueryParams(int page, String sortType) {
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("api_key", Config.MOVIE_DB_API_KEY);
         queryParams.put("page", String.valueOf(page));
-        queryParams.put("sort_by", getOrderTypeFromPref());
+        queryParams.put("sort_by", sortType);
         return queryParams;
     }
 
@@ -164,6 +176,28 @@ public class MoviesFragment extends Fragment {
             e.printStackTrace();
         }
         return list;
+    }
+
+    private void loadFromFavorites() {
+        List<Movie> favoriteMovies = new ArrayList<>();
+        Cursor cursor = getActivity().getContentResolver().query(FavoriteMoviesProvider.FavoriteMovies.CONTENT_URI, null, null, null, null);
+        if (cursor.moveToFirst()) {
+            do {
+                Movie movie = new Movie();
+                movie.setId(cursor.getInt(cursor.getColumnIndex(FavoriteMovies.ID)));
+                movie.setTitle(cursor.getString(cursor.getColumnIndex(FavoriteMovies.TITLE)));
+                movie.setOverview(cursor.getString(cursor.getColumnIndex(FavoriteMovies.OVERVIEW)));
+                movie.setPosterPath(cursor.getString(cursor.getColumnIndex(FavoriteMovies.POSTER_PATH)));
+                movie.setReleaseDate(cursor.getString(cursor.getColumnIndex(FavoriteMovies.RELEASE_DATE)));
+                movie.setVoteAverage(cursor.getDouble(cursor.getColumnIndex(FavoriteMovies.VOTE_AVERAGE)));
+                favoriteMovies.add(movie);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+
+        listMovies.clear();
+        listMovies.addAll(favoriteMovies);
+        fillView(true);
     }
 
     private void fillView(boolean reload) {
