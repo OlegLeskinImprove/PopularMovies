@@ -5,5 +5,5 @@ package leskin.udacity.popularmovies;
  */
 public class Config {
     //Enter your movie DB API key
-    public static final String MOVIE_DB_API_KEY = "";
+    public static final String MOVIE_DB_API_KEY = "8b785ab4ac8cf434cf490c40afc20d63";
 }

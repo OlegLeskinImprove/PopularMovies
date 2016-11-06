@@ -9,6 +9,9 @@
     <string name="pref_order_label">Sort films</string>
     <string name="pref_order_default_value">popularity.desc</string>
 
+    <string name="movie_details_trailers">Trailers:</string>
+    <string name="movie_details_reviews">Reviews:</string>
+
     <array name="pref_units_value">
         <item>popularity.desc</item>
         <item>vote_average.desc</item>

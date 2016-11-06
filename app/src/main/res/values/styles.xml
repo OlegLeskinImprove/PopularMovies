@@ -39,6 +39,10 @@
         <item name="android:textStyle">normal</item>
     </style>
 
+    <style name="PrimaryDarkText.16" parent="PrimaryDarkText">
+        <item name="android:textSize">16sp</item>
+    </style>
+
     <style name="PrimaryDarkText.20" parent="PrimaryDarkText">
         <item name="android:textSize">20sp</item>
     </style>

@@ -5,6 +5,7 @@ import java.util.Map;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.GET;
+import retrofit2.http.Path;
 import retrofit2.http.QueryMap;
 
 /**
@@ -17,4 +18,10 @@ public interface APIService {
 
     @GET("movie/")
     Call<ResponseBody> getMovieDetails(@QueryMap Map<String, String> options);
+
+    @GET("movie/{id}/videos")
+    Call<ResponseBody> getMovieTrailers(@Path("id") String id, @QueryMap Map<String, String> options);
+
+    @GET("movie/{id}/reviews")
+    Call<ResponseBody> getMovieReviews(@Path("id") String id, @QueryMap Map<String, String> options);
 }

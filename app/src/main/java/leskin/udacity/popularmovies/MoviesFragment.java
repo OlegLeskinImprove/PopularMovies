@@ -2,13 +2,17 @@ package leskin.udacity.popularmovies;
 
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v7.app.AppCompatActivity;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
 import com.google.gson.Gson;
@@ -38,8 +42,8 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MoviesActivity extends AppCompatActivity {
-    private static final String TAG = "MoviesActivity";
+public class MoviesFragment extends Fragment {
+    private static final String TAG = "MoviesFragment";
 
     @BindView(R.id.list_movies)
     RecyclerView moviesRecyclerView;
@@ -50,32 +54,43 @@ public class MoviesActivity extends AppCompatActivity {
     private MovieAdapter adapter;
     private GridLayoutManager layoutManager;
     private ArrayList<Movie> listMovies = new ArrayList<>();
+    private int countColumnsMovies = 2;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_movies, container, false);
+    }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_movies);
-        ButterKnife.bind(this);
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        ButterKnife.bind(this, view);
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
         init();
     }
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
         listMovies.clear();
         getMovies(1);
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.movies_menu, menu);
-        return true;
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.movies_menu, menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_settings) {
-            SettingsActivity.launch(this);
+            SettingsActivity.launch(getActivity());
             return true;
         } else
             return super.onOptionsItemSelected(item);
@@ -83,10 +98,10 @@ public class MoviesActivity extends AppCompatActivity {
 
 
     private void init() {
-        layoutManager = new GridLayoutManager(this, 2);
+        layoutManager = new GridLayoutManager(getActivity(), getCountColumnsMovies());
         moviesRecyclerView.setLayoutManager(layoutManager);
         moviesRecyclerView.setItemViewCacheSize(30);
-        adapter = new MovieAdapter(this, listMovies);
+        adapter = new MovieAdapter(getActivity(), listMovies, ((MoviesCallback) getActivity()));
         moviesRecyclerView.setAdapter(adapter);
         moviesRecyclerView.setHasFixedSize(true);
         moviesRecyclerView.addOnScrollListener(new EndlessScrollListener(layoutManager) {
@@ -107,7 +122,6 @@ public class MoviesActivity extends AppCompatActivity {
 
             APIService service = retrofit.create(APIService.class);
             Map<String, String> queryParams = getQueryParams(page);
-            Log.d(TAG, "getMovies: " + queryParams.toString());
 
             Call<ResponseBody> call = service.getMovies(queryParams);
             call.enqueue(new Callback<ResponseBody>() {
@@ -115,11 +129,12 @@ public class MoviesActivity extends AppCompatActivity {
                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                     listMovies.addAll(parseResponse(response.body()));
                     fillView(page == 1);
+                    if (!listMovies.isEmpty() && page == 1)
+                        ((MoviesCallback) getActivity()).moviesWasLoaded(listMovies.get(0));
                 }
 
                 @Override
                 public void onFailure(Call<ResponseBody> call, Throwable t) {
-                    Log.e(TAG, "onFailure: " + t.toString(), t);
                     hideProgress();
                 }
             });
@@ -160,7 +175,7 @@ public class MoviesActivity extends AppCompatActivity {
     }
 
     private String getOrderTypeFromPref() {
-        return PreferenceManager.getDefaultSharedPreferences(this).getString(getString(R.string.pref_order_key),
+        return PreferenceManager.getDefaultSharedPreferences(getActivity()).getString(getString(R.string.pref_order_key),
                 getString(R.string.pref_order_default_value));
     }
 
@@ -171,4 +186,20 @@ public class MoviesActivity extends AppCompatActivity {
     private void hideProgress() {
         progressBar.setVisibility(View.GONE);
     }
+
+    public int getCountColumnsMovies() {
+        return countColumnsMovies;
+    }
+
+    public void setCountColumnsMovies(int countColumnsMovies) {
+        this.countColumnsMovies = countColumnsMovies;
+    }
+
+
+    public interface MoviesCallback {
+        void movieItemClick(Movie movie);
+
+        void moviesWasLoaded(Movie firstMovie);
+    }
+
 }

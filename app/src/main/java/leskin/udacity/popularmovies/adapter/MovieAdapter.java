@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import leskin.udacity.popularmovies.DetailMovieActivity;
+import leskin.udacity.popularmovies.MoviesFragment;
 import leskin.udacity.popularmovies.R;
 import leskin.udacity.popularmovies.model.Movie;
 import leskin.udacity.popularmovies.network.Urls;
@@ -26,10 +26,12 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
 
     private Context context;
     private ArrayList<Movie> list;
+    private MoviesFragment.MoviesCallback callback;
 
-    public MovieAdapter(Context context, ArrayList<Movie> list) {
+    public MovieAdapter(Context context, ArrayList<Movie> list, MoviesFragment.MoviesCallback callback) {
         this.context = context;
         this.list = list;
+        this.callback = callback;
     }
 
     @Override
@@ -45,7 +47,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
         holder.posterImg.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                DetailMovieActivity.launch(context, getItem(position));
+                callback.movieItemClick(getItem(position));
             }
         });
     }
