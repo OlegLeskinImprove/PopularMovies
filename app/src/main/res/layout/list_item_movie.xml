@@ -9,4 +9,5 @@
         android:id="@+id/img_poster"
         android:adjustViewBounds="true"
         />
+
 </RelativeLayout>

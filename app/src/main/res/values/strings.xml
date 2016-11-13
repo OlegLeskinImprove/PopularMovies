@@ -12,6 +12,11 @@
     <string name="movie_details_trailers">Trailers:</string>
     <string name="movie_details_reviews">Reviews:</string>
 
+    <string name="movies_list_key">movies_key</string>
+    <string name="movie_position_key">movies_position_key</string>
+    <string name="movie_order_type_key">movies_order_type_key</string>
+    <string name="movies_linear_layout_manager_state_key">movies_linear_layout_manager_state_key</string>
+
     <array name="pref_units_value">
         <item>popularity.desc</item>
         <item>vote_average.desc</item>

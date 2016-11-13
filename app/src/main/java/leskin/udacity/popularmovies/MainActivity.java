@@ -4,12 +4,16 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 
-import leskin.udacity.popularmovies.model.Movie;
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+
+import leskin.udacity.popularmovies.event.MovieClickEvent;
+import leskin.udacity.popularmovies.event.MoviesWasLoadedEvent;
 
 /**
  * Created by Oleg Leskin on 06.11.2016.
  */
-public class MainActivity extends AppCompatActivity implements MoviesFragment.MoviesCallback {
+public class MainActivity extends AppCompatActivity{
     private static final String DETAILFRAGMENT_TAG = "DFTAG";
     private boolean mTwoPane;
 
@@ -28,22 +32,35 @@ public class MainActivity extends AppCompatActivity implements MoviesFragment.Mo
     }
 
     @Override
-    public void movieItemClick(Movie movie) {
-        if (mTwoPane) {
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.movie_detail_container, DetailMovieFragment.newInstance(movie), DETAILFRAGMENT_TAG)
-                    .commit();
-        } else {
-            DetailMovieActivity.launch(this, movie);
-        }
+    protected void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
     }
 
     @Override
-    public void moviesWasLoaded(Movie firstMovie) {
+    protected void onStop() {
+        EventBus.getDefault().unregister(this);
+        super.onStop();
+    }
+
+    @Subscribe
+    public void movieItemClick(MovieClickEvent event){
         if (mTwoPane) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.movie_detail_container, DetailMovieFragment.newInstance(firstMovie), DETAILFRAGMENT_TAG)
+                    .replace(R.id.movie_detail_container, DetailMovieFragment.newInstance(event.getMovie()), DETAILFRAGMENT_TAG)
+                    .commit();
+        } else {
+            DetailMovieActivity.launch(this, event.getMovie());
+        }
+    }
+
+    @Subscribe
+    public void moviesWasLoaded(MoviesWasLoadedEvent event){
+        if (mTwoPane) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.movie_detail_container, DetailMovieFragment.newInstance(event.getFirstMovie()), DETAILFRAGMENT_TAG)
                     .commit();
         }
     }
+
 }

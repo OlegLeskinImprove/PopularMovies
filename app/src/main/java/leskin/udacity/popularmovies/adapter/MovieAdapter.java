@@ -9,12 +9,14 @@ import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import leskin.udacity.popularmovies.MoviesFragment;
 import leskin.udacity.popularmovies.R;
+import leskin.udacity.popularmovies.event.MovieClickEvent;
 import leskin.udacity.popularmovies.model.Movie;
 import leskin.udacity.popularmovies.network.Urls;
 
@@ -26,12 +28,10 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
 
     private Context context;
     private ArrayList<Movie> list;
-    private MoviesFragment.MoviesCallback callback;
 
-    public MovieAdapter(Context context, ArrayList<Movie> list, MoviesFragment.MoviesCallback callback) {
+    public MovieAdapter(Context context, ArrayList<Movie> list) {
         this.context = context;
         this.list = list;
-        this.callback = callback;
     }
 
     @Override
@@ -42,12 +42,12 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
     }
 
     @Override
-    public void onBindViewHolder(MovieViewHolder holder, final int position) {
+    public void onBindViewHolder(final MovieViewHolder holder, final int position) {
         Glide.with(context).load(Urls.POSTER_URL + list.get(position).getPosterPath()).into(holder.posterImg);
         holder.posterImg.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                callback.movieItemClick(getItem(position));
+                movieItemClick(getItem(position), position);
             }
         });
     }
@@ -55,6 +55,13 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
     @Override
     public int getItemCount() {
         return list.size();
+    }
+
+    private void movieItemClick(Movie movie, int position) {
+        MovieClickEvent event = new MovieClickEvent();
+        event.setPosition(position);
+        event.setMovie(movie);
+        EventBus.getDefault().post(event);
     }
 
     private Movie getItem(int position) {

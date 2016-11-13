@@ -2,6 +2,8 @@ package leskin.udacity.popularmovies;
 
 import android.database.Cursor;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -19,6 +21,8 @@ import android.widget.ProgressBar;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -34,6 +38,8 @@ import butterknife.ButterKnife;
 import leskin.udacity.popularmovies.adapter.MovieAdapter;
 import leskin.udacity.popularmovies.db.FavoriteMovies;
 import leskin.udacity.popularmovies.db.FavoriteMoviesProvider;
+import leskin.udacity.popularmovies.event.MovieClickEvent;
+import leskin.udacity.popularmovies.event.MoviesWasLoadedEvent;
 import leskin.udacity.popularmovies.model.Movie;
 import leskin.udacity.popularmovies.network.APIService;
 import leskin.udacity.popularmovies.network.Urls;
@@ -58,11 +64,28 @@ public class MoviesFragment extends Fragment {
     private GridLayoutManager layoutManager;
     private ArrayList<Movie> listMovies = new ArrayList<>();
     private int countColumnsMovies = 2;
+    private int clickedPosition = 0;
+    private String orderType = "";
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        if (savedInstanceState != null && savedInstanceState.containsKey(getString(R.string.movies_list_key))) {
+            listMovies = savedInstanceState.getParcelableArrayList(getString(R.string.movies_list_key));
+            clickedPosition = savedInstanceState.getInt(getString(R.string.movie_position_key), 0);
+            orderType = savedInstanceState.getString(getString(R.string.movie_order_type_key), "");
+        }
         return inflater.inflate(R.layout.fragment_movies, container, false);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        if (!listMovies.isEmpty())
+            outState.putParcelableArrayList(getString(R.string.movies_list_key), listMovies);
+        outState.putInt(getString(R.string.movie_position_key), clickedPosition);
+        outState.putString(getString(R.string.movie_order_type_key), orderType);
+
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -81,8 +104,28 @@ public class MoviesFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        listMovies.clear();
-        getMovies(1);
+        EventBus.getDefault().register(this);
+
+        if (!orderType.equals(getOrderTypeFromPref()) || listMovies.isEmpty()) {
+            listMovies.clear();
+            getMovies(1);
+        } else {
+            fillView(true);
+            scrollToClickedPosition();
+            moviesWasLoaded(listMovies.get(clickedPosition));
+        }
+    }
+
+    @Override
+    public void onStop() {
+        orderType = getOrderTypeFromPref();
+        EventBus.getDefault().unregister(this);
+        super.onStop();
+    }
+
+    @Subscribe
+    public void movieItemClick(MovieClickEvent event) {
+        clickedPosition = event.getPosition();
     }
 
     @Override
@@ -99,14 +142,12 @@ public class MoviesFragment extends Fragment {
             return super.onOptionsItemSelected(item);
     }
 
-
     private void init() {
         layoutManager = new GridLayoutManager(getActivity(), getCountColumnsMovies());
         moviesRecyclerView.setLayoutManager(layoutManager);
         moviesRecyclerView.setItemViewCacheSize(30);
-        adapter = new MovieAdapter(getActivity(), listMovies, ((MoviesCallback) getActivity()));
+        adapter = new MovieAdapter(getActivity(), listMovies);
         moviesRecyclerView.setAdapter(adapter);
-        moviesRecyclerView.setHasFixedSize(true);
         moviesRecyclerView.addOnScrollListener(new EndlessScrollListener(layoutManager) {
             @Override
             public void onLoadMore(int page, int totalItemsCount) {
@@ -125,7 +166,8 @@ public class MoviesFragment extends Fragment {
                         .build();
 
                 APIService service = retrofit.create(APIService.class);
-                Map<String, String> queryParams = getQueryParams(page, getOrderTypeFromPref());
+                orderType = getOrderTypeFromPref();
+                Map<String, String> queryParams = getQueryParams(page, orderType);
 
                 Call<ResponseBody> call = service.getMovies(queryParams);
                 call.enqueue(new Callback<ResponseBody>() {
@@ -134,7 +176,7 @@ public class MoviesFragment extends Fragment {
                         listMovies.addAll(parseResponse(response.body()));
                         fillView(page == 1);
                         if (!listMovies.isEmpty() && page == 1)
-                            ((MoviesCallback) getActivity()).moviesWasLoaded(listMovies.get(0));
+                            moviesWasLoaded(listMovies.get(0));
                     }
 
                     @Override
@@ -151,14 +193,19 @@ public class MoviesFragment extends Fragment {
         }
     }
 
+    private void moviesWasLoaded(Movie movie) {
+        MoviesWasLoadedEvent event = new MoviesWasLoadedEvent();
+        event.setFirstMovie(movie);
+        EventBus.getDefault().post(event);
+    }
+
     private boolean loadFromNetwork() {
         return !getOrderTypeFromPref().equals(getResources().getStringArray(R.array.pref_units_value)[2]);
     }
 
-
     private Map<String, String> getQueryParams(int page, String sortType) {
         Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("api_key", Config.MOVIE_DB_API_KEY);
+        queryParams.put("api_key", BuildConfig.MOVIE_DB_API_KEY);
         queryParams.put("page", String.valueOf(page));
         queryParams.put("sort_by", sortType);
         return queryParams;
@@ -208,6 +255,16 @@ public class MoviesFragment extends Fragment {
             adapter.notifyItemInserted(adapter.getItemCount());
     }
 
+    private void scrollToClickedPosition() {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                layoutManager.scrollToPosition(clickedPosition);
+            }
+        }, 500);
+    }
+
     private String getOrderTypeFromPref() {
         return PreferenceManager.getDefaultSharedPreferences(getActivity()).getString(getString(R.string.pref_order_key),
                 getString(R.string.pref_order_default_value));
@@ -227,13 +284,6 @@ public class MoviesFragment extends Fragment {
 
     public void setCountColumnsMovies(int countColumnsMovies) {
         this.countColumnsMovies = countColumnsMovies;
-    }
-
-
-    public interface MoviesCallback {
-        void movieItemClick(Movie movie);
-
-        void moviesWasLoaded(Movie firstMovie);
     }
 
 }

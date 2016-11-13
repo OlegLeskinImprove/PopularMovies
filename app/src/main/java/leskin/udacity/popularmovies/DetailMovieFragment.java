@@ -152,7 +152,7 @@ public class DetailMovieFragment extends Fragment {
 
     private Map<String, String> getQueryParams() {
         Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("api_key", Config.MOVIE_DB_API_KEY);
+        queryParams.put("api_key", BuildConfig.MOVIE_DB_API_KEY);
         return queryParams;
     }
 

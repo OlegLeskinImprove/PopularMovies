@@ -14,13 +14,23 @@ android {
         versionName "1.0"
         vectorDrawables.useSupportLibrary = true
     }
+
+
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    def MOVIE_DB_API_KEY = '"' + MovieDbApiKey + '"' ?: '"Define Movies db API key"';
+
+    buildTypes.each {
+        it.buildConfigField "String", "MOVIE_DB_API_KEY", MOVIE_DB_API_KEY
+    }
 }
+
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
@@ -37,5 +47,6 @@ dependencies {
     apt 'net.simonvt.schematic:schematic-compiler:0.5.3'
     compile 'net.simonvt.schematic:schematic:0.5.3'
     compile 'com.facebook.stetho:stetho:1.4.1'
+    compile 'org.greenrobot:eventbus:3.0.0'
 
 }
